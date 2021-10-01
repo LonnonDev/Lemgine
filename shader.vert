@@ -2,10 +2,12 @@
 
 in vec2 position;
 
-uniform float t;
+uniform float y;
+uniform float x;
 
 void main() {
     vec2 pos = position;
-    pos.x += t;
+    pos.x += x;
+    pos.y += y;
     gl_Position = vec4(pos, 0.0, 1.0);
 }
