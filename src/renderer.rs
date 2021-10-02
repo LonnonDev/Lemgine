@@ -1,4 +1,4 @@
-use crate::Vertex;
+use crate::vertex::Vertex;
 
 #[derive(Clone)]
 pub struct Renderer {

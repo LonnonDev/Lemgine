@@ -2,7 +2,7 @@ use std::convert::TryInto;
 
 use glium::glutin::dpi::LogicalSize;
 
-use crate::Vertex;
+use crate::vertex::Vertex;
 
 
 #[derive(PartialEq, Clone, Copy)]
