@@ -1,11 +1,11 @@
-use std::{time::{Duration, Instant}};
+use std::{any::Any, time::{Duration, Instant}};
 
 use glium::{Display, Program, VertexBuffer, glutin::{self, dpi::LogicalSize, event_loop::{ControlFlow, EventLoop}}};
 
 use crate::{Vertex, renderer::Renderer, traits::VectorUnnormalizedValues};
 
 #[allow(dead_code)]
-#[derive(Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum VecTuple {
     U8(u8),
     U16(u16),
@@ -22,21 +22,29 @@ pub enum VecTuple {
 }
 
 impl VecTuple {
-    pub fn unwrap(&self) -> f32 {
+    pub fn b_unwrap(&self) -> Option<Box<dyn Any>> {
         match self.clone() {
-            VecTuple::U8(val) => val as f32,
-            VecTuple::U16(val) => val as f32,
-            VecTuple::U32(val) => val as f32,
-            VecTuple::U64(val) => val as f32,
-            VecTuple::U128(val) => val as f32,
-            VecTuple::I8(val) => val as f32,
-            VecTuple::I16(val) => val as f32,
-            VecTuple::I32(val) => val as f32,
-            VecTuple::I64(val) => val as f32,
-            VecTuple::I128(val) => val as f32,
-            VecTuple::F32(val) => val as f32,
-            VecTuple::F64(val) => val as f32,
+            VecTuple::U8(val) => Some(Box::new(val)),
+            VecTuple::U16(val) => Some(Box::new(val)),
+            VecTuple::U32(val) => Some(Box::new(val)),
+            VecTuple::U64(val) => Some(Box::new(val)),
+            VecTuple::U128(val) => Some(Box::new(val)),
+            VecTuple::I8(val) => Some(Box::new(val)),
+            VecTuple::I16(val) => Some(Box::new(val)),
+            VecTuple::I32(val) => Some(Box::new(val)),
+            VecTuple::I64(val) => Some(Box::new(val)),
+            VecTuple::I128(val) => Some(Box::new(val)),
+            VecTuple::F32(val) => Some(Box::new(val)),
+            VecTuple::F64(val) => Some(Box::new(val)),
         }
+    }
+    pub fn a_unwrap<T: 'static + Copy + Sized>(&self) -> T {
+        let x = *self.b_unwrap().unwrap().downcast_ref::<T>().unwrap();
+        return x
+    }
+    pub fn unwrap<T: 'static + Copy + Sized>(&self) -> T {
+        let x = self.a_unwrap::<T>();
+        return x
     }
 }
 
@@ -88,6 +96,7 @@ impl WindowDrawer {
         rendering_functions: Vec<for<'r> fn(&'r mut Self, Vec<VecTuple>) -> Vec<VecTuple>>,
         input_functions: Vec<for<'r> fn(&'r mut Self, Vec<VecTuple>, glutin::event::DeviceId, glutin::event::KeyboardInput, bool) -> Vec<VecTuple>>,
     ) {
+        println!("{:?}", variables);
         self.renderer.add_to_dynamic_from_vec(&self.vertices);
 
         // Size of the screen
@@ -116,6 +125,7 @@ impl WindowDrawer {
                     #[allow(unused_variables)]
                     glutin::event::WindowEvent::KeyboardInput { device_id, input, is_synthetic } => {
                         for x in input_functions.clone() {
+                            println!("{:?}", input);
                             variables = x(&mut self, variables.clone(), device_id, input, is_synthetic);
                         }
                     },
