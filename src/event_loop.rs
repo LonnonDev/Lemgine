@@ -1,6 +1,6 @@
 use std::{any::Any, time::{Duration, Instant}};
 
-use glium::{Display, Program, VertexBuffer, glutin::{self, dpi::LogicalSize, event_loop::{ControlFlow, EventLoop}}};
+use glium::{Display, Program, VertexBuffer, glutin::{self, dpi::LogicalSize, event_loop::{ControlFlow, EventLoop}}, implement_vertex};
 
 use crate::{Vertex, renderer::Renderer, traits::VectorUnnormalizedValues};
 
@@ -69,6 +69,7 @@ impl WindowDrawer {
         vertices: Vec<Vertex>, 
         renderer: Renderer, 
     ) -> WindowDrawer {
+        implement_vertex!(Vertex, position);
         return WindowDrawer { 
             vertex_shader: vertex_shader.clone(),
             fragment_shader: fragment_shader.clone(),
