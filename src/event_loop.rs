@@ -2,7 +2,7 @@ use std::{any::Any, time::{Duration, Instant}};
 
 use glium::{Display, Program, VertexBuffer, glutin::{self, dpi::LogicalSize, event_loop::{ControlFlow, EventLoop}}, implement_vertex};
 
-use crate::{Vertex, renderer::Renderer, traits::VectorUnnormalizedValues};
+use crate::{vertex::Vertex, renderer::Renderer, traits::VectorUnnormalizedValues};
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy)]
@@ -61,6 +61,21 @@ pub struct WindowDrawer {
     pub fps: f64
 }
 
+trait StringInVec {
+    fn in_vec(&self, value: String) -> bool;
+}
+
+impl StringInVec for Vec<String> {
+    fn in_vec(&self, value: String) -> bool {
+        for x in self {
+            if *x == value {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
 impl WindowDrawer {
     pub fn new(
         vertex_shader: String, 
@@ -96,6 +111,7 @@ impl WindowDrawer {
         mut variables: Vec<VecTuple>, 
         rendering_functions: Vec<for<'r> fn(&'r mut Self, Vec<VecTuple>) -> Vec<VecTuple>>,
         input_functions: Vec<for<'r> fn(&'r mut Self, Vec<VecTuple>, glutin::event::DeviceId, glutin::event::KeyboardInput, bool) -> Vec<VecTuple>>,
+        features: Vec<String>,
     ) {
         println!("{:?}", variables);
         self.renderer.add_to_dynamic_from_vec(&self.vertices);
@@ -126,7 +142,6 @@ impl WindowDrawer {
                     #[allow(unused_variables)]
                     glutin::event::WindowEvent::KeyboardInput { device_id, input, is_synthetic } => {
                         for x in input_functions.clone() {
-                            println!("{:?}", input);
                             variables = x(&mut self, variables.clone(), device_id, input, is_synthetic);
                         }
                     },
@@ -154,9 +169,11 @@ impl WindowDrawer {
             }
             let time_now = Instant::now();
             if time_now.duration_since(last_second) >= Duration::new(1,0) {
-                println!("{} FPS", frames);
                 last_second = Instant::now();
                 frames = 0;
+            }
+            if features.in_vec("framerate".to_string()) || features.in_vec("fps".to_string()) {
+                println!("{} FPS", frames);
             }
         });
     }
