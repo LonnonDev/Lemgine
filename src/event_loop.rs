@@ -169,11 +169,11 @@ impl WindowDrawer {
             }
             let time_now = Instant::now();
             if time_now.duration_since(last_second) >= Duration::new(1,0) {
+                if features.in_vec("framerate".to_string()) || features.in_vec("fps".to_string()) {
+                    println!("{} FPS", frames);
+                }
                 last_second = Instant::now();
                 frames = 0;
-            }
-            if features.in_vec("framerate".to_string()) || features.in_vec("fps".to_string()) {
-                println!("{} FPS", frames);
             }
         });
     }
