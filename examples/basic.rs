@@ -1,4 +1,4 @@
-use lemgine::backend::{glutin::event::{DeviceId, KeyboardInput}};
+use lemgine::backend::{self, glutin::event::{DeviceId, KeyboardInput}};
 use lemgine::{vertex::Vertex, event_loop::{VecTuple, WindowDrawer}, renderer::Renderer};
 
 trait Rendering {
@@ -22,12 +22,12 @@ impl Input for WindowDrawer {
 }
 
 fn main() {
-    let event_loop = glium::glutin::event_loop::EventLoop::new();
-    let wb = glium::glutin::window::WindowBuilder::new()
-        .with_inner_size(glium::glutin::dpi::LogicalSize::new(1024.0, 768.0))
+    let event_loop = backend::glutin::event_loop::EventLoop::new();
+    let wb = backend::glutin::window::WindowBuilder::new()
+        .with_inner_size(backend::glutin::dpi::LogicalSize::new(1024.0, 768.0))
         .with_title("Hello world");
-    let cb = glium::glutin::ContextBuilder::new();
-    let display = glium::Display::new(wb.clone(), cb, &event_loop).unwrap();
+    let cb = backend::glutin::ContextBuilder::new();
+    let display = backend::Display::new(wb.clone(), cb, &event_loop).unwrap();
 
     // Vertices of an object
     let vertex1 = Vertex { position: [-100.0, -100.0] };
