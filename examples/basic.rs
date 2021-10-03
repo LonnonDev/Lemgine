@@ -1,4 +1,4 @@
-use lemgine::glium::{glutin::event::{DeviceId, KeyboardInput}};
+use lemgine::backend::{glutin::event::{DeviceId, KeyboardInput}};
 use lemgine::{vertex::Vertex, event_loop::{VecTuple, WindowDrawer}, renderer::Renderer};
 
 trait Rendering {

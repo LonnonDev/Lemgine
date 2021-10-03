@@ -3,4 +3,4 @@ pub mod renderer;
 pub mod traits;
 pub mod vertex;
 
-pub use glium;
+pub use glium as backend;
