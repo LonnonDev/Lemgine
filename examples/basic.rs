@@ -7,6 +7,16 @@ trait Rendering {
 
 impl Rendering for WindowDrawer {
     fn render_cube(&mut self, variables: Vec<VecTuple>) -> Vec<VecTuple> {
+        // Vertices of an object
+        let vertex1 = Vertex { position: [-100.0, -100.0] };
+        let vertex2 = Vertex { position: [ 100.0,  100.0] };
+        let vertex3 = Vertex { position: [ 100.0, -100.0] };
+        let vertex4 = Vertex { position: [ 100.0,  100.0] };
+        let vertex5 = Vertex { position: [-100.0, -100.0] };
+        let vertex6 = Vertex { position: [-100.0,  100.0] };
+        let vertices = vec![vertex1, vertex2, vertex3, vertex4, vertex5, vertex6];
+        self.renderer.add_to_dynamic_from_vec(&vertices);
+
         return variables
     }
 }
@@ -29,14 +39,6 @@ fn main() {
     let cb = backend::glutin::ContextBuilder::new();
     let display = backend::Display::new(wb.clone(), cb, &event_loop).unwrap();
 
-    // Vertices of an object
-    let vertex1 = Vertex { position: [-100.0, -100.0] };
-    let vertex2 = Vertex { position: [ 100.0,  100.0] };
-    let vertex3 = Vertex { position: [ 100.0, -100.0] };
-    let vertex4 = Vertex { position: [ 100.0,  100.0] };
-    let vertex5 = Vertex { position: [-100.0, -100.0] };
-    let vertex6 = Vertex { position: [-100.0,  100.0] };
-    let triangle = vec![vertex1, vertex2, vertex3, vertex4, vertex5, vertex6];
     let vertex = "
 #version 140
 
@@ -56,7 +58,7 @@ void main() {
 }
 ".to_string();
 
-    let window_drawer = WindowDrawer::new(vertex, fragment, display, triangle, Renderer::new());
+    let window_drawer = WindowDrawer::new(vertex, fragment, display, Renderer::new());
     let variables = vec![];
     window_drawer.run(event_loop, variables, vec![Rendering::render_cube], vec![Input::get_movement], vec![]);
 }

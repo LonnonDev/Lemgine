@@ -53,7 +53,6 @@ pub struct WindowDrawer {
     pub fragment_shader: String,
     pub display: Display, 
     pub size: LogicalSize<f32>, 
-    pub vertices: Vec<Vertex>, 
     pub renderer: Renderer, 
     pub shape_vertices: Vec<Vertex>, 
     pub vertex_buffer: VertexBuffer<Vertex>,
@@ -81,7 +80,6 @@ impl WindowDrawer {
         vertex_shader: String, 
         fragment_shader: String, 
         display: Display, 
-        vertices: Vec<Vertex>, 
         renderer: Renderer, 
     ) -> WindowDrawer {
         implement_vertex!(Vertex, position);
@@ -90,7 +88,6 @@ impl WindowDrawer {
             fragment_shader: fragment_shader.clone(),
             display: display.clone(), 
             size: display.gl_window().window().inner_size().to_logical::<f32>(1.0), 
-            vertices, 
             renderer, 
             shape_vertices: vec![], 
             vertex_buffer: glium::VertexBuffer::new(&display, &vec![]).unwrap(), 
@@ -114,7 +111,6 @@ impl WindowDrawer {
         features: Vec<String>,
     ) {
         println!("{:?}", variables);
-        self.renderer.add_to_dynamic_from_vec(&self.vertices);
 
         // Size of the screen
         self.size = self.display.gl_window().window().inner_size().to_logical::<f32>(1.0);
