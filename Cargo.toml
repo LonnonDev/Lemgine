@@ -1,6 +1,6 @@
 [package]
 name = "lemgine"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2018"
 license = "MIT"
 description = "An engine that's pretty good or bad idk"
