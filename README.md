@@ -1,2 +1,2 @@
 ### The First(?) Trait Driven Game Engine?! ###
-Hi guys
+Lemgine is the first(?) Trait driven game engine (maybe)
