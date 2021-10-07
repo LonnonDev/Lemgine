@@ -1,12 +1,12 @@
-use std::{any::Any, time::{Duration, Instant}};
+use std::{any::Any, collections::HashMap, time::{Duration, Instant}};
 
-use glium::{Display, Program, VertexBuffer, glutin::{self, dpi::LogicalSize, event_loop::{ControlFlow, EventLoop}}, implement_vertex};
+use glium::{Display, Program, VertexBuffer, glutin::{self, dpi::LogicalSize, event_loop::{ControlFlow, EventLoop}}, implement_vertex, index::NoIndices};
 
 use crate::{vertex::Vertex, renderer::Renderer, traits::VectorUnnormalizedValues};
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy)]
-pub enum VecTuple {
+pub enum Variable {
     U8(u8),
     U16(u16),
     U32(u32),
@@ -21,21 +21,21 @@ pub enum VecTuple {
     F64(f64),
 }
 
-impl VecTuple {
+impl Variable {
     pub fn b_unwrap(&self) -> Option<Box<dyn Any>> {
         match self.clone() {
-            VecTuple::U8(val) => Some(Box::new(val)),
-            VecTuple::U16(val) => Some(Box::new(val)),
-            VecTuple::U32(val) => Some(Box::new(val)),
-            VecTuple::U64(val) => Some(Box::new(val)),
-            VecTuple::U128(val) => Some(Box::new(val)),
-            VecTuple::I8(val) => Some(Box::new(val)),
-            VecTuple::I16(val) => Some(Box::new(val)),
-            VecTuple::I32(val) => Some(Box::new(val)),
-            VecTuple::I64(val) => Some(Box::new(val)),
-            VecTuple::I128(val) => Some(Box::new(val)),
-            VecTuple::F32(val) => Some(Box::new(val)),
-            VecTuple::F64(val) => Some(Box::new(val)),
+            Variable::U8(val) => Some(Box::new(val)),
+            Variable::U16(val) => Some(Box::new(val)),
+            Variable::U32(val) => Some(Box::new(val)),
+            Variable::U64(val) => Some(Box::new(val)),
+            Variable::U128(val) => Some(Box::new(val)),
+            Variable::I8(val) => Some(Box::new(val)),
+            Variable::I16(val) => Some(Box::new(val)),
+            Variable::I32(val) => Some(Box::new(val)),
+            Variable::I64(val) => Some(Box::new(val)),
+            Variable::I128(val) => Some(Box::new(val)),
+            Variable::F32(val) => Some(Box::new(val)),
+            Variable::F64(val) => Some(Box::new(val)),
         }
     }
     pub fn a_unwrap<T: 'static + Copy + Sized>(&self) -> T {
@@ -46,18 +46,6 @@ impl VecTuple {
         let x = self.a_unwrap::<T>();
         return x
     }
-}
-
-pub struct WindowDrawer {
-    pub vertex_shader: String,
-    pub fragment_shader: String,
-    pub display: Display, 
-    pub size: LogicalSize<f32>, 
-    pub renderer: Renderer, 
-    pub shape_vertices: Vec<Vertex>, 
-    pub vertex_buffer: VertexBuffer<Vertex>,
-    pub program: Program,
-    pub fps: f64
 }
 
 trait StringInVec {
@@ -73,6 +61,21 @@ impl StringInVec for Vec<String> {
         }
         return false;
     }
+}
+
+pub struct WindowDrawer {
+    pub vertex_shader: String,
+    pub fragment_shader: String,
+    pub display: Display, 
+    pub size: LogicalSize<f32>, 
+    pub renderer: Renderer, 
+    pub shape_vertices: Vec<Vertex>, 
+    pub vertex_buffer: VertexBuffer<Vertex>,
+    pub program: Program,
+    pub fps: f64,
+    pub indices: NoIndices,
+    variables: Vec<Variable>,
+    variables_hash: HashMap<String, usize>,
 }
 
 impl WindowDrawer {
@@ -97,21 +100,37 @@ impl WindowDrawer {
         fragment_shader.as_str(), 
         None
             ).unwrap(), 
-            fps: 60.0
+            fps: 60.0,
+            indices: glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList),
+            variables: vec![],
+            variables_hash: HashMap::new()
         }
+    }
+
+    pub fn get_var<T: 'static + Sized + Copy>(&self, name: &'static str) -> T {
+        let index = self.variables_hash.get(name).unwrap();
+        let return_value = self.variables[*index].unwrap();
+        return return_value
+    }
+
+    pub fn add_variable(&mut self, name: &'static str, value: Variable) {
+        self.variables_hash.insert(name.to_owned(), self.variables.len());
+        self.variables.push(value);
+    }
+
+    pub fn mutate_var(&mut self, name: &'static str, value: Variable) {
+        let index = self.variables_hash.get(name).unwrap();
+        self.variables[*index] = value;
     }
 
     #[allow(unused_assignments)]
     pub fn run(
         mut self, 
         event_loop: EventLoop<()>, 
-        mut variables: Vec<VecTuple>, 
-        rendering_functions: Vec<for<'r> fn(&'r mut Self, Vec<VecTuple>) -> Vec<VecTuple>>,
-        input_functions: Vec<for<'r> fn(&'r mut Self, Vec<VecTuple>, glutin::event::DeviceId, glutin::event::KeyboardInput, bool) -> Vec<VecTuple>>,
+        rendering_functions: Vec<for<'r> fn(&'r mut Self) -> ()>,
+        input_functions: Vec<for<'r> fn(&'r mut Self, glutin::event::DeviceId, glutin::event::KeyboardInput, bool) -> ()>,
         features: Vec<String>,
     ) {
-        println!("{:?}", variables);
-
         // Size of the screen
         self.size = self.display.gl_window().window().inner_size().to_logical::<f32>(1.0);
 
@@ -138,14 +157,14 @@ impl WindowDrawer {
                     #[allow(unused_variables)]
                     glutin::event::WindowEvent::KeyboardInput { device_id, input, is_synthetic } => {
                         for x in input_functions.clone() {
-                            variables = x(&mut self, variables.clone(), device_id, input, is_synthetic);
+                            x(&mut self, device_id, input, is_synthetic);
                         }
                     },
                     _ => return,
                 },
                 glutin::event::Event::RedrawRequested(_) => {
                     for x in rendering_functions.clone() {
-                        variables = x(&mut self, variables.clone());
+                        x(&mut self);
                     }
                 },
                 glutin::event::Event::RedrawEventsCleared => {
