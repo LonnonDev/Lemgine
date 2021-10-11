@@ -10,3 +10,4 @@ description = "An engine that's pretty good or bad idk"
 
 [dependencies]
 glium = "0.30.2"
+winit_input_helper = "0.10.0"
