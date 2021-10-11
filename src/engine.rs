@@ -128,7 +128,7 @@ impl WindowDrawer {
         mut self, 
         event_loop: EventLoop<()>, 
         rendering_functions: Vec<for<'r> fn(&'r mut Self) -> ()>,
-        input_functions: Vec<for<'r> fn(&'r mut Self, glutin::event::DeviceId, glutin::event::KeyboardInput, bool) -> ()>,
+        input_functions: Vec<for<'r> fn(&'r mut Self, winit_input_helper::WinitInputHelper) -> ()>,
         features: Vec<String>,
     ) {
         // Size of the screen
@@ -144,51 +144,51 @@ impl WindowDrawer {
         let mut last_update = Instant::now();
         let mut last_second = Instant::now();
 
+        let mut input = winit_input_helper::WinitInputHelper::new();
+
         event_loop.run(move |ev, _, control_flow| {  
-            let next_frame_time = Instant::now() +
-                std::time::Duration::from_nanos(1_000_000 / self.fps as u64);
-            *control_flow = glutin::event_loop::ControlFlow::WaitUntil(next_frame_time);
-            match ev {
-                glutin::event::Event::WindowEvent { event, .. } => match event {
-                    glutin::event::WindowEvent::CloseRequested => {
-                        *control_flow = glutin::event_loop::ControlFlow::Exit;
-                        return;
+            let target_frametime = Duration::from_secs_f64(1.0 / self.fps);
+            let time_since_last_frame = last_update.elapsed();
+            if time_since_last_frame >= target_frametime {
+                frames += 1;
+                self.display.gl_window().window().request_redraw();
+                last_update = Instant::now();
+                if input.update(&ev) {
+                    for x in input_functions.clone() {
+                        x(&mut self, input.clone());
+                    }
+                }
+                *control_flow = glutin::event_loop::ControlFlow::WaitUntil(Instant::now());
+                match ev {
+                    glutin::event::Event::WindowEvent { event, .. } => match event {
+                        glutin::event::WindowEvent::CloseRequested => {
+                            *control_flow = glutin::event_loop::ControlFlow::Exit;
+                            return;
+                        },
+                        _ => return,
                     },
-                    #[allow(unused_variables)]
-                    glutin::event::WindowEvent::KeyboardInput { device_id, input, is_synthetic } => {
-                        for x in input_functions.clone() {
-                            x(&mut self, device_id, input, is_synthetic);
+                    glutin::event::Event::RedrawRequested(_) => {
+                        for x in rendering_functions.clone() {
+                            x(&mut self);
                         }
                     },
-                    _ => return,
-                },
-                glutin::event::Event::RedrawRequested(_) => {
-                    for x in rendering_functions.clone() {
-                        x(&mut self);
-                    }
-                },
-                glutin::event::Event::RedrawEventsCleared => {
-                    let target_frametime = Duration::from_secs_f64(1.0 / self.fps);
-                    let time_since_last_frame = last_update.elapsed();
-                    if time_since_last_frame >= target_frametime {
-                        frames += 1;
-                        self.display.gl_window().window().request_redraw();
-                        last_update = Instant::now();
-                    } else {
-                        *control_flow = ControlFlow::WaitUntil(
-                            Instant::now() + target_frametime - time_since_last_frame,
-                        );
-                    }
-                },
-                _ => (),
-            }
-            let time_now = Instant::now();
-            if time_now.duration_since(last_second) >= Duration::new(1,0) {
-                if features.in_vec("framerate".to_string()) || features.in_vec("fps".to_string()) {
-                    println!("{} FPS", frames);
+                    glutin::event::Event::RedrawEventsCleared => {
+
+                    },
+                    _ => (),
                 }
-                last_second = Instant::now();
-                frames = 0;
+                let time_now = Instant::now();
+                if time_now.duration_since(last_second) >= Duration::new(1,0) {
+                    if features.in_vec("framerate".to_string()) || features.in_vec("fps".to_string()) {
+                        println!("{} FPS", frames);
+                    }
+                    last_second = Instant::now();
+                    frames = 0;
+                }
+            } else {
+                *control_flow = ControlFlow::WaitUntil(
+                    Instant::now() + target_frametime - time_since_last_frame,
+                );
             }
         });
     }
