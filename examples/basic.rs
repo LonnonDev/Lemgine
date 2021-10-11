@@ -1,6 +1,52 @@
-use backend::{Surface, uniform};
-use lemgine::{backend::{self, glutin::event::{DeviceId, KeyboardInput}}, engine::Variable, traits::VectorUnnormalizedValues, vertex::Vertex};
+use backend::{Surface, glutin::event::VirtualKeyCode, uniform};
+use input::{WinitInputHelper};
+use lemgine::{input, backend::{self}, engine::Variable, traits::VectorUnnormalizedValues, vertex::Vertex};
 use lemgine::{engine::{WindowDrawer}, renderer::Renderer};
+
+fn main() {
+    // Make event loop
+    let event_loop = backend::glutin::event_loop::EventLoop::new();
+    let wb = backend::glutin::window::WindowBuilder::new()
+        .with_inner_size(backend::glutin::dpi::LogicalSize::new(1024.0, 768.0))
+        .with_title("Hello world");
+    let cb = backend::glutin::ContextBuilder::new();
+    let display = backend::Display::new(wb.clone(), cb, &event_loop).unwrap();
+
+    // Shaders
+    let vertex = "
+#version 140
+
+in vec2 position;
+
+uniform float y;
+uniform float x;
+
+void main() {
+    vec2 pos = position;
+    pos.x += x;
+    pos.y += y;
+    gl_Position = vec4(pos, 0.0, 1.0);
+}
+".to_string();
+    let fragment = "
+#version 140
+
+out vec4 color;
+
+void main() {
+    color = vec4(1.0, 0.0, 0.0, 1.0);
+}
+".to_string();
+
+    // Make window drawer
+    let mut window_drawer = WindowDrawer::new(vertex, fragment, display, Renderer::new());
+    // Add a the variable "x" and "y"
+    window_drawer.add_variable("x", Variable::F32(0f32));
+    window_drawer.add_variable("y", Variable::F32(0f32));
+    // if you put functions later in the vec it will be ran later
+    window_drawer.run(event_loop, vec![Rendering::render_cube, Rendering::renderer], vec![Input::get_movement], vec![]);
+}
+
 
 trait Rendering {
     fn render_cube(&mut self);
@@ -9,9 +55,9 @@ trait Rendering {
 
 impl Rendering for WindowDrawer {
     fn render_cube(&mut self) {
-        // Get and print the x variable
+        // Get the Variables we declared earlier
         let x: f32 = self.get_var("x");
-        println!("{}", x);
+        let y: f32 = self.get_var("y");
 
         // Vertices of an object
         let vertex1 = Vertex { position: [-100.0, -100.0] };
@@ -26,7 +72,7 @@ impl Rendering for WindowDrawer {
         // Make background color
         let mut target = self.display.draw();
         target.clear_color(255.0/255.0, 180.0/255.0, 180.0/255.0, 1.0);
-        target.draw(&self.vertex_buffer, &self.indices, &self.program, &uniform!{ }, &Default::default()).unwrap();
+        target.draw(&self.vertex_buffer, &self.indices, &self.program, &uniform!{ x: x, y: y }, &Default::default()).unwrap();
         target.finish().unwrap();
     }
     fn renderer(&mut self) {
@@ -44,48 +90,43 @@ impl Rendering for WindowDrawer {
 }
 
 trait Input {
-    fn get_movement(&mut self, device_id: DeviceId, input: KeyboardInput, is_synthetic: bool); 
+    fn get_movement(&mut self, input: WinitInputHelper); 
 }
 
 impl Input for WindowDrawer {
-    fn get_movement(&mut self, _: DeviceId, _: KeyboardInput, _: bool) {
-        
+    fn get_movement(&mut self, input: WinitInputHelper) {
+        // Get the Variables
+        let x: f32 = self.get_var("x");
+        let y: f32 = self.get_var("y");
+
+        let mut horizontal: f32 = 0.0;
+        let mut vertical: f32 = 0.0;
+
+        // Move the cube based on input
+        if input.key_held(VirtualKeyCode::W) {
+            vertical += 0.1;
+            println!("W");
+        }
+        if input.key_held(VirtualKeyCode::S) {
+            vertical -= 0.1;
+            println!("S");
+        }
+        if input.key_held(VirtualKeyCode::A) {
+            horizontal -= 0.1;
+            println!("A");
+        }
+        if input.key_held(VirtualKeyCode::D) {
+            horizontal += 0.1;
+            println!("D");
+        }
+
+        if horizontal.abs() + vertical.abs() == 2.0 {
+            horizontal = horizontal.sqrt();
+            vertical = vertical.sqrt();
+        }
+        horizontal = horizontal/self.size.width;
+        vertical = vertical/self.size.height;
+        self.mutate_var("x", Variable::F32(x + horizontal));
+        self.mutate_var("y", Variable::F32(y + vertical));
     }
-}
-
-fn main() {
-    // Make event loop
-    let event_loop = backend::glutin::event_loop::EventLoop::new();
-    let wb = backend::glutin::window::WindowBuilder::new()
-        .with_inner_size(backend::glutin::dpi::LogicalSize::new(1024.0, 768.0))
-        .with_title("Hello world");
-    let cb = backend::glutin::ContextBuilder::new();
-    let display = backend::Display::new(wb.clone(), cb, &event_loop).unwrap();
-
-    // Shaders
-    let vertex = "
-#version 140
-
-in vec2 position;
-
-void main() {
-    gl_Position = vec4(position, 0.0, 1.0);
-}    
-".to_string();
-    let fragment = "
-#version 140
-
-out vec4 color;
-
-void main() {
-    color = vec4(1.0, 0.0, 0.0, 1.0);
-}
-".to_string();
-
-    // Make window drawer
-    let mut window_drawer = WindowDrawer::new(vertex, fragment, display, Renderer::new());
-    // Add a the variable "x"
-    window_drawer.add_variable("x", Variable::F32(0f32));
-    // if you put functions later in the vec it will be ran later
-    window_drawer.run(event_loop, vec![Rendering::render_cube, Rendering::renderer], vec![Input::get_movement], vec![]);
 }
